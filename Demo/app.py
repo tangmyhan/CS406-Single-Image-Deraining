@@ -13,8 +13,9 @@ st.set_page_config(page_title="Deraining", layout="wide", page_icon="🌧️")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 try:
-    from restormer_model import Restormer
-    from pix2pix_model import UnetGenerator
+    from Demo.restormer_model import Restormer
+    from Demo.pix2pix_model import UnetGenerator
+
 except ImportError:
     st.error("⚠️ Lỗi: Thiếu file 'restormer_model.py' hoặc 'pix2pix_model.py'.")
     st.stop()
@@ -22,7 +23,8 @@ except ImportError:
 # LOAD & XỬ LÝ RESTORMER
 @st.cache_resource
 def load_restormer():
-    path = "best_model.pth"
+    # path = "best_model.pth"
+    path = os.path.join(os.path.dirname(__file__), "Demo", "best_model.pth")
     if not os.path.exists(path): return None
     
     # Config
@@ -63,7 +65,8 @@ def run_restormer(img_pil, model):
 #  LOAD & XỬ LÝ PIX2PIX
 @st.cache_resource
 def load_pix2pix():
-    path = "generator_best.pth" 
+    # path = "generator_best.pth" 
+    path = os.path.join(os.path.dirname(__file__), "Demo", "generator_best.pth")
     if not os.path.exists(path): return None
     
     model = UnetGenerator().to(DEVICE)
