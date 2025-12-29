@@ -13,8 +13,8 @@ st.set_page_config(page_title="Deraining", layout="wide", page_icon="🌧️")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 try:
-    from Demo.restormer_model import Restormer
-    from Demo.pix2pix_model import UnetGenerator
+    from restormer_model import Restormer
+    from pix2pix_model import UnetGenerator
 
 except ImportError:
     st.error("⚠️ Lỗi: Thiếu file 'restormer_model.py' hoặc 'pix2pix_model.py'.")
@@ -23,9 +23,13 @@ except ImportError:
 # LOAD & XỬ LÝ RESTORMER
 @st.cache_resource
 def load_restormer():
-    # path = "best_model.pth"
-    path = os.path.join(os.path.dirname(__file__), "Demo", "best_model.pth")
-    if not os.path.exists(path): return None
+    path = os.path.join(os.path.dirname(__file__), "best_model.pth")
+    if not os.path.exists(path):
+        alt = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Demo", "best_model.pth")
+        if os.path.exists(alt):
+            path = alt
+        else:
+            return None
     
     # Config
     model = Restormer(num_blocks=[3, 4, 4, 6], num_heads=[1, 2, 2, 4], 
@@ -36,6 +40,7 @@ def load_restormer():
     model.load_state_dict(state_dict)
     model.to(DEVICE).eval()
     return model
+
 
 def run_restormer(img_pil, model):
     w, h = img_pil.size
@@ -65,9 +70,14 @@ def run_restormer(img_pil, model):
 #  LOAD & XỬ LÝ PIX2PIX
 @st.cache_resource
 def load_pix2pix():
-    # path = "generator_best.pth" 
-    path = os.path.join(os.path.dirname(__file__), "Demo", "generator_best.pth")
-    if not os.path.exists(path): return None
+    # path = "generator_best.pth"
+    path = os.path.join(os.path.dirname(__file__), "generator_best.pth")
+    if not os.path.exists(path):
+        alt = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Demo", "generator_best.pth")
+        if os.path.exists(alt):
+            path = alt
+        else:
+            return None
     
     model = UnetGenerator().to(DEVICE)
     checkpoint = torch.load(path, map_location=DEVICE, weights_only=False)
@@ -111,7 +121,6 @@ def run_pix2pix(img_pil, model):
 # GIAO DIỆN CHÍNH
 # 
 st.title("🌧️ Removing rain from single images")
-# st.markdown("### So sánh trực tiếp hiệu quả khử mưa giữa hai kiến trúc mạng.")
 st.markdown(
     """
     **Mô hình:** Restormer vs. Pix2Pix 
@@ -142,12 +151,12 @@ else:
             progress_bar = st.progress(0)
             
             try:
-                # 1. Chạy Restormer
+                # Chạy Restormer
                 status_text.text("🤖 Đang chạy Restormer...")
                 out_res, input_res_resized = run_restormer(raw_image, model_res)
                 progress_bar.progress(50)
                 
-                # 2. Chạy Pix2Pix
+                # Chạy Pix2Pix
                 status_text.text("🎨 Đang chạy Pix2Pix...")
                 out_pix, input_pix_resized = run_pix2pix(raw_image, model_pix)
                 progress_bar.progress(100)
