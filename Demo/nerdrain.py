@@ -272,7 +272,7 @@ class MultiscaleNet(nn.Module):
 
         self.output_small = nn.Conv2d(int(dim * 1 ** 1), out_channels, kernel_size=3, stride=1, padding=1, bias=bias)
 
-        self.INR = INR(dim).cuda()
+        self.INR = INR(dim)
 
         self.patch_embed_mid = OverlapPatchEmbed(inp_channels, dim)
 
@@ -327,7 +327,7 @@ class MultiscaleNet(nn.Module):
         self.output_mid = nn.Conv2d(int(dim * 1 ** 1), out_channels, kernel_size=3, stride=1, padding=1, bias=bias)
         self.output_mid_context = nn.Conv2d(int(dim * 1 ** 1), dim, kernel_size=3, stride=1, padding=1, bias=bias)
 
-        self.INR2 = INR(dim).cuda()
+        self.INR2 = INR(dim)
 
         self.patch_embed_max = OverlapPatchEmbed(inp_channels, dim)
 

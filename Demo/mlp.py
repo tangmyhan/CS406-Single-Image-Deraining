@@ -70,7 +70,7 @@ class INR(nn.Module):
         rx = 2 / feat.shape[-2] / 2
         ry = 2 / feat.shape[-1] / 2
 
-        feat_coord = make_coord(feat.shape[-2:], flatten=False).cuda() \
+        feat_coord = make_coord(feat.shape[-2:], flatten=False).to(feat.device) \
             .permute(2, 0, 1) \
             .unsqueeze(0).expand(feat.shape[0], 2, *feat.shape[-2:])
 
@@ -129,7 +129,7 @@ class INR(nn.Module):
     def forward(self, inp):
         h, w = inp.shape[2], inp.shape[3]
         B = inp.shape[0]
-        coord = make_coord((h, w)).cuda()
+        coord = make_coord((h, w)).to(inp.device)
         cell = torch.ones_like(coord)
         cell[:, 0] *= 2 / h
         cell[:, 1] *= 2 / w
@@ -142,7 +142,7 @@ class INR(nn.Module):
 
     def positional_encoding(self, input, L): 
         shape = input.shape
-        freq = 2 ** torch.arange(L, dtype=torch.float32).cuda() * np.pi  
+        freq = 2 ** torch.arange(L, dtype=torch.float32, device=input.device) * np.pi  
         spectrum = input[..., None] * freq  
         sin, cos = spectrum.sin(), spectrum.cos()  
         input_enc = torch.stack([sin, cos], dim=-2)  

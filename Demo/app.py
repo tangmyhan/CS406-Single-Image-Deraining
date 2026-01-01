@@ -14,10 +14,20 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 try:
     from restormer_model import Restormer
-    from pix2pix_model import UnetGenerator
+except Exception as e:
+    st.error(f"restormer_model.py lỗi: {e}")
+    st.stop()
 
-except ImportError:
-    st.error("⚠️ Lỗi: Thiếu file 'restormer_model.py' hoặc 'pix2pix_model.py'.")
+try:
+    from pix2pix_model import UnetGenerator
+except Exception as e:
+    st.error(f"pix2pix_model.py lỗi: {e}")
+    st.stop()
+
+try:
+    from nerdrain import MultiscaleNet
+except Exception as e:
+    st.error(f"nerdrain.py lỗi: {e}")
     st.stop()
 
 # LOAD & XỬ LÝ RESTORMER
@@ -118,6 +128,43 @@ def run_pix2pix(img_pil, model):
     
     return Image.fromarray(fake_img), img_pil # Trả về output và input (đã resize)
 
+@st.cache_resource
+def load_nerdrain():
+    path = os.path.join(os.path.dirname(__file__), "model_best.pth")
+    if not os.path.exists(path):
+        alt = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Demo", "model_best.pth")
+        if os.path.exists(alt):
+            path = alt
+        else:
+            return None
+    
+    model = MultiscaleNet()
+    checkpoint = torch.load(path, map_location="cpu", weights_only=False)
+    state_dict = checkpoint.get("state_dict", checkpoint)
+    model.load_state_dict(state_dict)
+    model.to(DEVICE)
+    model.eval()
+    return model
+
+def run_nerdrain(img_pil, model):
+    w, h = img_pil.size
+    
+    max_size = 512
+    if max(w, h) > max_size:
+        scale = min(max_size/w, max_size/h)
+        img_pil = img_pil.resize((int(w*scale), int(h*scale)), Image.BILINEAR)
+        w, h = img_pil.size
+    
+    img_tensor = TF.to_tensor(img_pil).unsqueeze(0).to(DEVICE)
+    
+    with torch.no_grad():
+        output = model(img_tensor)
+        if isinstance(output, list):
+            output = output[0]
+    
+    output = torch.clamp(output, 0, 1)
+    return TF.to_pil_image(output.squeeze(0).cpu()), img_pil
+
 # GIAO DIỆN CHÍNH
 # 
 st.title("🌧️ Removing rain from single images")
@@ -132,11 +179,12 @@ st.markdown(
 with st.spinner("Đang tải model..."):
     model_res = load_restormer()
     model_pix = load_pix2pix()
+    model_nerdrain = load_nerdrain()
 
-if model_res is None or model_pix is None:
+if model_res is None or model_pix is None or model_nerdrain is None:
     st.error("⚠️ Không tìm thấy file model `.pth`. Vui lòng kiểm tra lại thư mục.")
 else:
-    st.success(f"Đã tải xong 2 model trên thiết bị: **{DEVICE}**")
+    st.success(f"Đã tải xong 3 model trên thiết bị: **{DEVICE}**")
 
     # --- Upload ---
     uploaded_file = st.file_uploader("Upload ảnh mưa (JPG/PNG)", type=["jpg", "png", "jpeg"])
@@ -154,13 +202,17 @@ else:
                 # Chạy Restormer
                 status_text.text("🤖 Đang chạy Restormer...")
                 out_res, input_res_resized = run_restormer(raw_image, model_res)
-                progress_bar.progress(50)
+                progress_bar.progress(34)
                 
                 # Chạy Pix2Pix
                 status_text.text("🎨 Đang chạy Pix2Pix...")
                 out_pix, input_pix_resized = run_pix2pix(raw_image, model_pix)
+                progress_bar.progress(66)
+
+                status_text.text("🚀 Đang chạy NeRD-Rain...")
+                out_yours, input_yours_resized = run_nerdrain(raw_image, model_nerdrain)
                 progress_bar.progress(100)
-                
+
                 status_text.empty()
                 progress_bar.empty()
                 
@@ -203,6 +255,24 @@ else:
                 buf2 = BytesIO()
                 out_pix.save(buf2, format="PNG")
                 st.download_button("📥 Tải ảnh về", buf2.getvalue(), "pix2pix.png", "image/png")
+
+                # NeRD-Rain
+                st.markdown("### **NeRD-Rain**")
+                image_comparison(
+                    img1=input_yours_resized,
+                    img2=out_yours,
+                    label1="Input",
+                    label2="NeRD-Rain",
+                    width=700,
+                    starting_position=50,
+                    show_labels=True,
+                    make_responsive=True,
+                    in_memory=True
+                )
+                # Download
+                buf3 = BytesIO()
+                out_yours.save(buf3, format="PNG")
+                st.download_button("📥 Tải ảnh về", buf3.getvalue(), "nerd_rain.png", "image/png")
 
             except Exception as e:
                 st.error(f"Lỗi xử lý: {e}")

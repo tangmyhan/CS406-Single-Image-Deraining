@@ -4,3 +4,4 @@ torchvision
 pillow
 numpy
 streamlit-image-comparison
+einops
