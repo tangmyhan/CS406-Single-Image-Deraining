@@ -156,17 +156,23 @@ def run_nerdrain(img_pil, model):
         w, h = img_pil.size
     
     img_tensor = TF.to_tensor(img_pil).unsqueeze(0).to(DEVICE)
+
+    factor = 16
+    pad_h = (factor - h % factor) % factor
+    pad_w = (factor - w % factor) % factor
+    img_tensor = F.pad(img_tensor, (0, pad_w, 0, pad_h), mode="reflect")
     
     with torch.no_grad():
         output = model(img_tensor)
         if isinstance(output, list):
             output = output[0]
     
+    output = output[:, :, :h, :w]
+    
     output = torch.clamp(output, 0, 1)
     return TF.to_pil_image(output.squeeze(0).cpu()), img_pil
 
 # GIAO DIỆN CHÍNH
-# 
 st.title("🌧️ Removing rain from single images")
 st.markdown(
     """
