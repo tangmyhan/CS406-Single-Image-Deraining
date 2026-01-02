@@ -33,9 +33,9 @@ except Exception as e:
 # LOAD & XỬ LÝ RESTORMER
 @st.cache_resource
 def load_restormer():
-    path = os.path.join(os.path.dirname(__file__), "best_model.pth")
+    path = os.path.join(os.path.dirname(__file__), "best_restormer.pth")
     if not os.path.exists(path):
-        alt = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Demo", "best_model.pth")
+        alt = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Demo", "best_restormer.pth")
         if os.path.exists(alt):
             path = alt
         else:
@@ -81,9 +81,9 @@ def run_restormer(img_pil, model):
 @st.cache_resource
 def load_pix2pix():
     # path = "generator_best.pth"
-    path = os.path.join(os.path.dirname(__file__), "generator_best.pth")
+    path = os.path.join(os.path.dirname(__file__), "best_gan.pth")
     if not os.path.exists(path):
-        alt = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Demo", "generator_best.pth")
+        alt = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Demo", "best_gan.pth")
         if os.path.exists(alt):
             path = alt
         else:
@@ -130,9 +130,9 @@ def run_pix2pix(img_pil, model):
 
 @st.cache_resource
 def load_nerdrain():
-    path = os.path.join(os.path.dirname(__file__), "model_best.pth")
+    path = os.path.join(os.path.dirname(__file__), "best_nerdrain.pth")
     if not os.path.exists(path):
-        alt = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Demo", "model_best.pth")
+        alt = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Demo", "best_nerdrain.pth")
         if os.path.exists(alt):
             path = alt
         else:
@@ -209,6 +209,7 @@ else:
                 out_pix, input_pix_resized = run_pix2pix(raw_image, model_pix)
                 progress_bar.progress(66)
 
+                # Chạy NeRD-Rain
                 status_text.text("🚀 Đang chạy NeRD-Rain...")
                 out_yours, input_yours_resized = run_nerdrain(raw_image, model_nerdrain)
                 progress_bar.progress(100)
